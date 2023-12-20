@@ -169,7 +169,8 @@ public class SpectrumItemGroups {
 		entries.add(SpectrumItems.ENDER_SPLICE);
 		entries.add(SpectrumEnchantmentHelper.getMaxEnchantedStack(SpectrumItems.ENDER_SPLICE));
 		entries.add(SpectrumItems.PERTURBED_EYE);
-		entries.add(SpectrumItems.CRESCENT_CLOCK);
+			entries.add(SpectrumItems.PIPE_BOMB);
+			entries.add(SpectrumItems.CRESCENT_CLOCK);
 		entries.add(SpectrumItems.MYSTERIOUS_LOCKET);
 		entries.add(SpectrumItems.MYSTERIOUS_COMPASS);
 	}).build();
