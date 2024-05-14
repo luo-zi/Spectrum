@@ -63,6 +63,17 @@ public class SpectrumSoundEvents {
 	public static final SoundEvent GLASS_SHIMMER = register("glass_shimmer");
 	public static final SoundEvent SOFT_HUM = register("soft_hum");
 
+	public static final SoundEvent CRITICAL_CRUNCH = register("critical_crunch");
+	public static final SoundEvent IMPACT_BASE = register("impact_base");
+	public static final SoundEvent IMPALING_HIT = register("impaling_hit");
+	public static final SoundEvent LEGENDARY_WEAPON_CRAFT = register("legendary_weapon_craft");
+	public static final SoundEvent METAL_HIT = register("metal_hit");
+	public static final SoundEvent METAL_TAP = register("metal_tap");
+	public static final SoundEvent METALLIC_UNSHEATHE = register("metallic_unsheathe");
+
+	public static final SoundEvent ELECTRIC_DISCHARGE = register("discharge");
+
+
 	public static final SoundEvent INCANDESCENT_CHARGE = register("incandescent_charge");
 	public static final SoundEvent INCANDESCENT_ARM = register("incandescent_arm");
 
@@ -113,6 +124,7 @@ public class SpectrumSoundEvents {
 	public static final SoundEvent SQUEAKER = register("squeaker");
 	
 	public static final SoundEvent BLOCK_MEMORY_ADVANCE = register("block.memory.advance");
+	public static final SoundEvent ITEM_PRIMORDIAL_LIGHTER_USE = register("item.primordial_lighter.use");
 	
 	public static final SoundEvent BLOCK_THREAT_CONFLUX_ARM = register("block.threat_conflux.arm");
 	public static final SoundEvent BLOCK_THREAT_CONFLUX_PRIME = register("block.threat_conflux.prime");
@@ -222,9 +234,8 @@ public class SpectrumSoundEvents {
 	public static final SoundEvent ENTITY_KINDLING_DEATH = register("entity.kindling.death");
 	public static final SoundEvent ENTITY_KINDLING_SHOOT = register("entity.kindling.shoot");
 	public static final SoundEvent ENTITY_KINDLING_ANGRY = register("entity.kindling.angry");
-	public static final SoundEvent ENTITY_KINDLING_LOVE = register("entity.kindling.love");
 	public static final SoundEvent ENTITY_KINDLING_JUMP = register("entity.kindling.jump");
-	
+
 	private static SoundEvent register(String id) {
 		Identifier identifier = SpectrumCommon.locate(id);
 		return Registry.register(Registries.SOUND_EVENT, identifier, SoundEvent.of(identifier));

@@ -3,17 +3,17 @@ package de.dafuqs.spectrum;
 import de.dafuqs.revelationary.api.advancements.*;
 import de.dafuqs.revelationary.api.revelations.*;
 import de.dafuqs.spectrum.api.energy.*;
-import de.dafuqs.spectrum.blocks.bottomless_bundle.BottomlessBundleItem;
+import de.dafuqs.spectrum.api.render.*;
+import de.dafuqs.spectrum.blocks.bottomless_bundle.*;
 import de.dafuqs.spectrum.blocks.pastel_network.*;
 import de.dafuqs.spectrum.compat.*;
 import de.dafuqs.spectrum.compat.ears.*;
 import de.dafuqs.spectrum.compat.idwtialsimmoedm.*;
 import de.dafuqs.spectrum.compat.patchouli.*;
 import de.dafuqs.spectrum.data_loaders.*;
+import de.dafuqs.spectrum.deeper_down.weather.WeatherThread;
 import de.dafuqs.spectrum.entity.*;
 import de.dafuqs.spectrum.helpers.*;
-import de.dafuqs.spectrum.api.render.DynamicItemRenderer;
-import de.dafuqs.spectrum.api.render.DynamicRenderModel;
 import de.dafuqs.spectrum.inventories.*;
 import de.dafuqs.spectrum.items.magic_items.*;
 import de.dafuqs.spectrum.items.tools.*;
@@ -27,11 +27,11 @@ import de.dafuqs.spectrum.registries.*;
 import de.dafuqs.spectrum.registries.client.*;
 import de.dafuqs.spectrum.render.*;
 import de.dafuqs.spectrum.render.capes.*;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.*;
 import net.fabricmc.api.*;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.*;
 import net.fabricmc.fabric.api.client.item.v1.*;
-import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
+import net.fabricmc.fabric.api.client.model.loading.v1.*;
 import net.fabricmc.fabric.api.client.networking.v1.*;
 import net.fabricmc.fabric.api.client.rendering.v1.*;
 import net.fabricmc.fabric.api.resource.*;
@@ -40,7 +40,7 @@ import net.minecraft.block.*;
 import net.minecraft.client.*;
 import net.minecraft.client.network.*;
 import net.minecraft.client.render.*;
-import net.minecraft.client.util.ModelIdentifier;
+import net.minecraft.client.util.*;
 import net.minecraft.client.util.math.*;
 import net.minecraft.client.world.*;
 import net.minecraft.item.*;
@@ -55,7 +55,7 @@ import org.jetbrains.annotations.*;
 import oshi.util.tuples.*;
 
 import java.util.*;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 import static de.dafuqs.spectrum.SpectrumCommon.*;
 
@@ -64,9 +64,12 @@ public class SpectrumClient implements ClientModInitializer, RevealingCallback, 
 	@Environment(EnvType.CLIENT)
 	public static final SkyLerper skyLerper = new SkyLerper();
 	public static final boolean foodEffectsTooltipsModLoaded = FabricLoader.getInstance().isModLoaded("foodeffecttooltips");
+	public static final WeatherThread WEATHER_THREAD = new WeatherThread();
 
 	// initial impl
 	public static final ObjectOpenHashSet<ModelIdentifier> CUSTOM_ITEM_MODELS = new ObjectOpenHashSet<>();
+
+	public static int spireTicks, lastSpireTicks;
 
 	@Override
 	public void onInitializeClient() {
@@ -106,7 +109,7 @@ public class SpectrumClient implements ClientModInitializer, RevealingCallback, 
 			});
 		});
 		registerCustomItemRenderer("bottomless_bundle", SpectrumItems.BOTTOMLESS_BUNDLE, BottomlessBundleItem.Renderer::new);
-		registerCustomItemRenderer("omni_accelerator", SpectrumItems.OMNI_ACCELERATOR, OmniAccelerator.Renderer::new);
+		registerCustomItemRenderer("omni_accelerator", SpectrumItems.OMNI_ACCELERATOR, OmniAcceleratorItem.Renderer::new);
 
 		logInfo("Registering Server to Client Package Receivers...");
 		SpectrumS2CPacketReceiver.registerS2CReceivers();
@@ -141,6 +144,24 @@ public class SpectrumClient implements ClientModInitializer, RevealingCallback, 
 			}
 		});
 
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			var world = client.world;
+			if (client.getCameraEntity() == null)
+				return;
+
+			var biome = world.getBiome(client.getCameraEntity().getBlockPos());
+			lastSpireTicks = spireTicks;
+
+			if (biome.matchesKey(SpectrumBiomes.HOWLING_SPIRES)) {
+				if (spireTicks < 60) {
+					spireTicks++;
+				}
+			}
+			else if (spireTicks > 0) {
+				spireTicks--;
+			}
+		});
+
 		if (CONFIG.AddItemTooltips) {
 			SpectrumTooltips.register();
 		}
@@ -168,6 +189,9 @@ public class SpectrumClient implements ClientModInitializer, RevealingCallback, 
 
 		RevealingCallback.register(this);
 		ClientAdvancementPacketCallback.registerCallback(this);
+
+		logInfo("Initializing Weather Thread...");
+		WEATHER_THREAD.initialize();
 
 		logInfo("Client startup completed!");
 	}
@@ -320,5 +344,9 @@ public class SpectrumClient implements ClientModInitializer, RevealingCallback, 
 		}
 
 		return false;
+	}
+
+	public static WeatherThread weatherThread() {
+		return WEATHER_THREAD;
 	}
 }
