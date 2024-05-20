@@ -1,9 +1,9 @@
 package de.dafuqs.spectrum.mixin;
 
-import com.llamalad7.mixinextras.sugar.Local;
-import com.llamalad7.mixinextras.sugar.ref.LocalFloatRef;
+import com.llamalad7.mixinextras.sugar.*;
+import com.llamalad7.mixinextras.sugar.ref.*;
 import de.dafuqs.spectrum.*;
-import de.dafuqs.spectrum.api.damage_type.StackTracking;
+import de.dafuqs.spectrum.api.damage_type.*;
 import de.dafuqs.spectrum.api.entity.*;
 import de.dafuqs.spectrum.api.item.*;
 import de.dafuqs.spectrum.api.status_effect.*;
@@ -12,7 +12,7 @@ import de.dafuqs.spectrum.cca.*;
 import de.dafuqs.spectrum.cca.azure_dike.*;
 import de.dafuqs.spectrum.enchantments.*;
 import de.dafuqs.spectrum.helpers.*;
-import de.dafuqs.spectrum.items.tools.DragonTalonItem;
+import de.dafuqs.spectrum.items.tools.*;
 import de.dafuqs.spectrum.items.trinkets.*;
 import de.dafuqs.spectrum.mixin.accessors.*;
 import de.dafuqs.spectrum.networking.*;
@@ -23,8 +23,7 @@ import dev.emi.trinkets.api.*;
 import net.minecraft.block.*;
 import net.minecraft.enchantment.*;
 import net.minecraft.entity.*;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.attribute.*;
 import net.minecraft.entity.damage.*;
 import net.minecraft.entity.effect.*;
 import net.minecraft.entity.mob.*;
@@ -95,7 +94,7 @@ public abstract class LivingEntityMixin {
 	@Shadow public abstract int getArmor();
 
 	@Shadow public abstract double getAttributeValue(EntityAttribute attribute);
-
+	
 	@ModifyArg(method = "dropXp()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/ExperienceOrbEntity;spawn(Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/util/math/Vec3d;I)V"), index = 2)
 	protected int spectrum$applyExuberance(int originalXP) {
 		return (int) (originalXP * spectrum$getExuberanceMod(this.attackingPlayer));
@@ -112,7 +111,7 @@ public abstract class LivingEntityMixin {
 	}
 
 	@Inject(method = "travel", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;hasNoDrag()Z"))
-	public void spectrum$modifyDragPhysics(CallbackInfo ci, @Local(ordinal = 1) LocalFloatRef f) {
+	public void spectrum$travel(CallbackInfo ci, @Local(ordinal = 1) LocalFloatRef f) {
 		var needle = (DragonTalonItem) SpectrumItems.DRAGON_TALON;
 		if (needle.isReservingSlot(this.getMainHandStack()) || needle.isReservingSlot(this.getOffHandStack())) {
 			if (!((LivingEntity) (Object) this).isOnGround()) {
@@ -120,9 +119,17 @@ public abstract class LivingEntityMixin {
 			}
 		}
 	}
+	
+	@ModifyVariable(method = "damageArmor(Lnet/minecraft/entity/damage/DamageSource;F)V", at = @At("HEAD"), ordinal = 0, argsOnly = true)
+	private float spectrum$damageArmor(float amount, DamageSource source) {
+		if (source.isIn(SpectrumDamageTypeTags.INCREASED_ARMOR_DAMAGE)) {
+			return amount * 10;
+		}
+		return amount;
+	}
 
 	@ModifyArg(method = "modifyAppliedDamage", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/DamageUtil;getInflictedDamage(FF)F"), index = 1)
-	public float modifyProtectionValues(float protection, @Local(argsOnly = true) DamageSource source) {
+	public float spectrum$modifyAppliedDamage(float protection, @Local(argsOnly = true) DamageSource source) {
 		var pair = getArmorPiercing(source);
 
 		if (pair.isPresent()) {
@@ -135,69 +142,61 @@ public abstract class LivingEntityMixin {
 
 		return protection;
 	}
-
-	@Inject(method = "applyArmorToDamage", at = @At("HEAD"), cancellable = true)
-	public void spectrum$applySpecialArmorEffects(DamageSource source, float amount, CallbackInfoReturnable<Float> cir) {
+	
+	@ModifyVariable(method = "applyArmorToDamage", at = @At("STORE"))
+	public float spectrum$applyArmorToDamage(float amount, DamageSource source) {
 		float defense = getArmor();
 		float toughness = getToughness();
 		var modified = false;
 		var pair = getArmorPiercing(source);
-
+		
 		if (pair.isPresent()) {
 			var ap = pair.get().getLeft();
 			var stack = pair.get().getRight();
-
+			
 			defense *= ap.getDefenseMultiplier((LivingEntity) (Object) this, stack);
 			toughness *= ap.getToughnessMultiplier((LivingEntity) (Object) this, stack);
 			modified = true;
 		}
-
-		if (source.isOf(SpectrumDamageTypes.IMPALING)) {
-			this.damageArmor(source, amount * 10);
+		
+		if (source.isIn(SpectrumDamageTypeTags.CALCULATES_DAMAGE_BASED_ON_TOUGHNESS)) {
 			amount = DamageUtil.getDamageLeft(amount, toughness * 1.334F, Float.MAX_VALUE);
-			cir.setReturnValue(amount);
-			cir.cancel();
-		}
-		else if(source.isOf(SpectrumDamageTypes.EVISCERATION)) {
-			this.damageArmor(source, amount);
+		} else if (source.isIn(SpectrumDamageTypeTags.PARTLY_IGNORES_PROTECTION)) {
 			amount = DamageUtil.getDamageLeft(amount, defense / 2, toughness);
-			cir.setReturnValue(amount);
-			cir.cancel();
 		}
-
-		if (modified && !source.isIn(DamageTypeTags.BYPASSES_ARMOR)) {
-			this.damageArmor(source, amount);
+		
+		if (modified) {
 			amount = DamageUtil.getDamageLeft(amount, defense, toughness);
-			cir.setReturnValue(amount);
-			cir.cancel();
 		}
+		
+		return amount;
 	}
-
+	
 	@Unique
 	private Optional<Pair<ArmorPiercingItem, ItemStack>> getArmorPiercing(DamageSource source) {
 		if (!(source instanceof StackTracking stackTracking))
 			return Optional.empty();
-
+		
 		var stackOptional = stackTracking.spectrum$getTrackedStack();
-
+		
 		if (stackOptional.isEmpty())
 			return Optional.empty();
-
+		
 		var stack = stackOptional.get();
-
+		
 		if (!(stack.getItem() instanceof  ArmorPiercingItem ap))
 			return Optional.empty();
-
+		
 		return Optional.of(new Pair<>(ap, stack));
 	}
-
+	
 	@Unique
 	private float getToughness() {
 		return (float) this.getAttributeValue(EntityAttributes.GENERIC_ARMOR_TOUGHNESS);
 	}
 
 	@Inject(at = @At("HEAD"), method = "fall(DZLnet/minecraft/block/BlockState;Lnet/minecraft/util/math/BlockPos;)V")
-	public void spectrum$mitigateFallDamageWithPuffCirclet(double heightDifference, boolean onGround, BlockState landedState, BlockPos landedPosition, CallbackInfo ci) {
+	public void spectrum$fall(double heightDifference, boolean onGround, BlockState landedState, BlockPos landedPosition, CallbackInfo ci) {
 		if (onGround) {
 			LivingEntity thisEntity = (LivingEntity) (Object) this;
 			if (!thisEntity.isInvulnerableTo(thisEntity.getDamageSources().fall()) && thisEntity.fallDistance > thisEntity.getSafeFallDistance()) {
