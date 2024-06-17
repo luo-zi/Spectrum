@@ -69,12 +69,14 @@
     "WalkNodeProcessorMixin",
     "WaterPathNodeMarkerMixin",
     "WitherEntityMixin",
+    "WorldMixin",
     "accessors.BiomeAccessor",
     "accessors.ExplosionAccessor",
     "accessors.FluidBlockAccessor",
     "accessors.FoxEntityAccessor",
     "accessors.GoatHornItemAccessor",
     "accessors.MapStateAccessor",
+    "accessors.MobEntityAccessor",
     "accessors.MooshroomEntityAccessor",
     "accessors.PersistentProjectileEntityAccessor",
     "accessors.ProjectileAttackGoalAccessor",
@@ -92,6 +94,7 @@
     "accessors.DimensionEffectsAccessor",
     "accessors.InGameHudAccessor",
     "accessors.WorldRendererAccessor",
+
     "client.AbstractClientEntityMixin",
     "client.BackgroundRendererMixin",
     "client.BipedEntityModelMixin",
@@ -120,8 +123,7 @@
     "client.accessors.ParticleManagerAccessor",
     "client.accessors.RenderLayerAccessor",
     "compat.colorful_hearts.absent.InGameHudMixin",
-    "compat.colorful_hearts.present.HeartMixin",
-    "compat.enchdesc.present.DescriptionManagerMixin"
+    "compat.colorful_hearts.present.HeartMixin"
   ],
   "injectors": {
     "defaultRequire": 1
